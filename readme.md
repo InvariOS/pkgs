@@ -1,14 +1,14 @@
-# invaros-pkgs
+# InvariOS Packages
 
-Build definitions for InvarOS's boot components, published as scratch OCI
-images to `ghcr.io/invaros/pkgs/<package>`.
+Build definitions for InvariOS's boot components, published as scratch OCI
+images to `ghcr.io/invarios/pkgs/<package>`.
 
 ## Packages
 
 | Package | Image | Produces |
 | --- | --- | --- |
-| [`kernel/`](kernel) | `ghcr.io/invaros/pkgs/kernel` | `/vmlinuz`, `/kernel.config` |
-| [`systemd-boot/`](systemd-boot) | `ghcr.io/invaros/pkgs/systemd-boot` | `/systemd-boot.efi`, `/boot.efi.stub` |
+| [`kernel/`](kernel) | `ghcr.io/invarios/pkgs/kernel` | `/vmlinuz`, `/kernel.config` |
+| [`systemd-boot/`](systemd-boot) | `ghcr.io/invarios/pkgs/systemd-boot` | `/systemd-boot.efi`, `/boot.efi.stub` |
 
 Each package directory is self-contained:
 
@@ -42,7 +42,7 @@ cd kernel # or systemd-boot
 docker build \
   --platform linux/amd64 \
   --build-arg KERNEL_VERSION=$(cat VERSION) \
-  -t invaros-pkgs-kernel:$(cat VERSION)-amd64 \
+  -t invarios-pkgs-kernel:$(cat VERSION)-amd64 \
   .
 ```
 

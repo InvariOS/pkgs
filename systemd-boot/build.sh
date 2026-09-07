@@ -68,12 +68,12 @@ meson setup \
     --wrap-mode=nodownload \
     -Dstrip=true \
     -Dlibc=musl \
-    -Dversion-tag="${SYSTEMD_VERSION}-invaros" \
-    -Dsbat-distro=invaros \
-    -Dsbat-distro-summary="InvarOS" \
+    -Dversion-tag="${SYSTEMD_VERSION}-invarios" \
+    -Dsbat-distro=invarios \
+    -Dsbat-distro-summary="InvariOS" \
     -Dsbat-distro-pkgname=systemd-boot \
     -Dsbat-distro-version="${SYSTEMD_VERSION}" \
-    -Dsbat-distro-url="https://github.com/InvarOS/pkgs" \
+    -Dsbat-distro-url="https://github.com/InvariOS/pkgs" \
     -Dadm-group=false \
     -Danalyze=false \
     -Dbacklight=false \
