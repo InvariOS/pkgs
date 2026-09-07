@@ -10,6 +10,7 @@ on:
     paths:
       - "kernel/**"
       - ".github/workflows/kernel.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read

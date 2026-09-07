@@ -10,6 +10,7 @@ on:
     paths:
       - "systemd-boot/**"
       - ".github/workflows/systemd-boot.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
