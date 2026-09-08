@@ -108,7 +108,14 @@ make ARCH="${ARCH}" defconfig
     --enable FRAMEBUFFER_CONSOLE_DETECT_PRIMARY \
     --enable DRM_SIMPLEDRM \
     --enable DRM_EFIDRM \
-    --enable DRM_VIRTIO_GPU
+    --enable DRM_VIRTIO_GPU \
+    --enable EFI_VARS_PSTORE \
+    --enable EFIVAR_FS \
+    --enable EFI_PARTITION \
+    --enable VFAT_FS \
+    --enable NLS_CODEPAGE_437 \
+    --enable NLS_ISO8859_1 \
+    --enable XFS_FS
 
 make ARCH="${ARCH}" olddefconfig
 

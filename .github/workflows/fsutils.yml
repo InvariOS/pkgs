@@ -1,0 +1,32 @@
+name: fsutils
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "fsutils/**"
+      - ".github/workflows/fsutils.yml"
+  pull_request:
+    paths:
+      - "fsutils/**"
+      - ".github/workflows/fsutils.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build and push
+        uses: SIGTERM-Labs/actions/docker/build@main
+        with:
+          dockerfile: ./fsutils/Dockerfile
+          docker-context: ./fsutils
+          image_subpath: fsutils
+          push: ${{ github.event_name != 'pull_request' }}

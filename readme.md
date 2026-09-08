@@ -9,8 +9,9 @@ images to `ghcr.io/invarios/pkgs/<package>`.
 | --- | --- | --- |
 | [`kernel/`](kernel) | `ghcr.io/invarios/pkgs/kernel` | `/vmlinuz`, `/kernel.config` |
 | [`systemd-boot/`](systemd-boot) | `ghcr.io/invarios/pkgs/systemd-boot` | `/systemd-boot.efi`, `/boot.efi.stub` |
+| [`fsutils/`](fsutils) | `ghcr.io/invarios/pkgs/fsutils` | `/sbin/mkfs.vfat`, `/sbin/mkfs.xfs` + their runtime `.so` deps |
 
-Each package directory is self-contained:
+`kernel/` and `systemd-boot/` are self-contained in the strict sense:
 
 - `Dockerfile` -- multi-stage build ending in `FROM scratch`, so the
   published image contains only the built artifacts.
@@ -19,6 +20,19 @@ Each package directory is self-contained:
 - `VERSION` -- the pinned upstream version. CI reads this file to tag
   the published image; it's the single source of truth for version
   bumps.
+
+`fsutils/` is a deliberate, temporary exception to that pattern: instead
+of fetching its own upstream source and verifying a GPG signature, its
+single-stage `Dockerfile` runs `apk add xfsprogs dosfstools` against a
+pinned Alpine base image and copies the resulting binaries plus their
+runtime `.so` dependencies (Alpine's own musl among them) straight out
+of the `FROM scratch` final stage -- `apk`'s own signature check against
+Alpine's repo keys is the trust boundary, not our own verification.
+This exists so [invarios](https://github.com/invarios/invarios)'s
+install sequence can format the target disk's ESP/STATE/DATA partitions
+at runtime without vendoring a full from-source musl/xfsprogs/dosfstools
+toolchain yet; replacing it with one (matching the `kernel`/
+`systemd-boot` pattern above) is tracked debt, not abandoned.
 
 ## Toolchain images
 
@@ -44,6 +58,11 @@ The `builder` toolchain image is tagged `:main` (plus `:sha-<sha>`) as a
 single multi-platform (`linux/amd64,linux/arm64`) manifest, built with
 QEMU emulation for the non-native arch via the shared build action.
 
+`fsutils` follows the same `:main` (plus `:sha-<sha>`) tagging as
+`builder`, for the same reason: it has no independent upstream version
+of its own to pin -- it just tracks whatever the pinned Alpine base
+image's `xfsprogs`/`dosfstools` packages currently resolve to.
+
 ## CI
 
 Each package has its own workflow (`.github/workflows/kernel.yml`,
@@ -55,6 +74,10 @@ pushes to `main` build and push.
 triggered only by changes under `builder/`, which delegates the
 multi-arch build/push to the shared `docker/build` action. Pull
 requests build (but don't push); pushes to `main` build and push.
+
+`fsutils` has its own workflow (`.github/workflows/fsutils.yml`),
+triggered only by changes under `fsutils/`, using the same shared
+`docker/build` action as `builder`.
 
 ## Building locally
 
@@ -73,4 +96,9 @@ building `systemd-boot/`.)
 ```sh
 cd builder
 docker build -t invarios-pkgs-builder:main .
+```
+
+```sh
+cd fsutils
+docker build -t invarios-pkgs-fsutils:main .
 ```
