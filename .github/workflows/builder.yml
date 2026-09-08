@@ -1,0 +1,32 @@
+name: builder
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "builder/**"
+      - ".github/workflows/builder.yml"
+  pull_request:
+    paths:
+      - "builder/**"
+      - ".github/workflows/builder.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build and push
+        uses: SIGTERM-Labs/actions/docker/build@main
+        with:
+          dockerfile: ./builder/Dockerfile
+          docker-context: ./builder
+          image_subpath: builder
+          push: ${{ github.event_name != 'pull_request' }}

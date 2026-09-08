@@ -20,13 +20,29 @@ Each package directory is self-contained:
   the published image; it's the single source of truth for version
   bumps.
 
+## Toolchain images
+
+| Image | Image | Contains |
+| --- | --- | --- |
+| [`builder/`](builder) | `ghcr.io/invarios/pkgs/builder` | Go toolchain plus `dosfstools`/`mtools`/`xorriso`, used by the [invarios](https://github.com/invarios/invarios) `Makefile` to build/run the appliance image builder |
+
+Unlike the package images above, `builder/` is a plain single-stage
+image (not `FROM scratch`, no `VERSION`/`build.sh`) and is published as
+a single multi-platform manifest tagged `:main`, built via the shared
+[`SIGTERM-Labs/actions/docker/build`](https://github.com/SIGTERM-Labs/actions/blob/main/docker/build/action.yml)
+action rather than the native per-arch matrix used for `kernel`/`systemd-boot`.
+
 ## Tagging
 
-Images are tagged `<version>-<arch>`, e.g. `6.18.49-amd64`,
-`6.18.49-arm64`. Each arch is a separate single-platform image built
-natively (amd64 on `ubuntu-latest`, arm64 on `ubuntu-24.04-arm`) rather
-than one multi-platform manifest, so builds run in parallel without
-QEMU emulation.
+Package images (`kernel`, `systemd-boot`) are tagged `<version>-<arch>`,
+e.g. `6.18.49-amd64`, `6.18.49-arm64`. Each arch is a separate
+single-platform image built natively (amd64 on `ubuntu-latest`, arm64 on
+`ubuntu-24.04-arm`) rather than one multi-platform manifest, so builds
+run in parallel without QEMU emulation.
+
+The `builder` toolchain image is tagged `:main` (plus `:sha-<sha>`) as a
+single multi-platform (`linux/amd64,linux/arm64`) manifest, built with
+QEMU emulation for the non-native arch via the shared build action.
 
 ## CI
 
@@ -34,6 +50,11 @@ Each package has its own workflow (`.github/workflows/kernel.yml`,
 `.github/workflows/systemd-boot.yml`), triggered only by changes under
 its own directory. Pull requests build (but don't push) both arches;
 pushes to `main` build and push.
+
+`builder` has its own workflow (`.github/workflows/builder.yml`),
+triggered only by changes under `builder/`, which delegates the
+multi-arch build/push to the shared `docker/build` action. Pull
+requests build (but don't push); pushes to `main` build and push.
 
 ## Building locally
 
@@ -48,3 +69,8 @@ docker build \
 
 (Swap `KERNEL_VERSION` for `SYSTEMD_VERSION` and the image name when
 building `systemd-boot/`.)
+
+```sh
+cd builder
+docker build -t invarios-pkgs-builder:main .
+```
