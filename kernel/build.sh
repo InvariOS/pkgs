@@ -115,7 +115,8 @@ make ARCH="${ARCH}" defconfig
     --enable VFAT_FS \
     --enable NLS_CODEPAGE_437 \
     --enable NLS_ISO8859_1 \
-    --enable XFS_FS
+    --enable XFS_FS \
+    --enable OVERLAY_FS
 
 make ARCH="${ARCH}" olddefconfig
 
