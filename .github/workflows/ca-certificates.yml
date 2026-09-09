@@ -1,0 +1,82 @@
+name: ca-certificates
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ca-certificates/**"
+      - ".github/workflows/ca-certificates.yml"
+  pull_request:
+    paths:
+      - "ca-certificates/**"
+      - ".github/workflows/ca-certificates.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read package version and checksum
+        id: version
+        run: |
+          echo "value=$(cat ca-certificates/VERSION)" >> "$GITHUB_OUTPUT"
+          echo "sha256=$(cat ca-certificates/SHA256)" >> "$GITHUB_OUTPUT"
+
+      # Derived from the owning org (rather than hardcoded) so the image
+      # path stays correct if the org is ever renamed. GHCR requires a
+      # lowercase path; github.repository_owner preserves the org's
+      # actual casing.
+      - name: Set image name
+        id: image
+        run: |
+          name="ghcr.io/${{ github.repository_owner }}/ca-certificates"
+          echo "name=$(echo "$name" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      # main is the tag consumers pull to always get the currently
+      # pinned bundle without tracking VERSION bumps themselves; the
+      # dated tag exists so a build can still pin an exact bundle for
+      # reproducibility.
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ steps.image.outputs.name }}
+          flavor: |
+            latest=false
+          tags: |
+            type=raw,value=${{ steps.version.outputs.value }}
+            type=raw,value=main,enable={{is_default_branch}}
+            type=sha,format=long
+
+      # The pinned PEM doesn't depend on architecture, so this publishes
+      # one multi-platform manifest rather than a separate build per arch.
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: ca-certificates
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          build-args: |
+            CA_CERTIFICATES_VERSION=${{ steps.version.outputs.value }}
+            CA_CERTIFICATES_SHA256=${{ steps.version.outputs.sha256 }}
+          tags: ${{ steps.meta.outputs.tags }}

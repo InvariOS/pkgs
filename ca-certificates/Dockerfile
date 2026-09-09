@@ -1,0 +1,16 @@
+FROM alpine:3.24 AS builder
+
+RUN apk add --no-cache bash curl
+
+ARG CA_CERTIFICATES_VERSION
+ARG CA_CERTIFICATES_SHA256
+
+ENV CA_CERTIFICATES_VERSION=${CA_CERTIFICATES_VERSION} \
+    CA_CERTIFICATES_SHA256=${CA_CERTIFICATES_SHA256}
+
+WORKDIR /work
+COPY build.sh .
+RUN bash build.sh
+
+FROM scratch
+COPY --from=builder /out/ /

@@ -10,6 +10,7 @@ images to `ghcr.io/invarios/<package>`.
 | [`kernel/`](kernel) | `ghcr.io/invarios/kernel` | `/vmlinuz`, `/kernel.config` |
 | [`systemd-boot/`](systemd-boot) | `ghcr.io/invarios/systemd-boot` | `/systemd-boot.efi`, `/boot.efi.stub` |
 | [`fsutils/`](fsutils) | `ghcr.io/invarios/fsutils` | `/sbin/mkfs.vfat`, `/sbin/mkfs.xfs` + their runtime `.so` deps |
+| [`ca-certificates/`](ca-certificates) | `ghcr.io/invarios/ca-certificates` | `/etc/ssl/certs/ca-certificates.crt` |
 
 `kernel/` and `systemd-boot/` are self-contained in the strict sense:
 
@@ -33,6 +34,14 @@ install sequence can format the target disk's ESP/STATE/DATA partitions
 at runtime without vendoring a full from-source musl/xfsprogs/dosfstools
 toolchain yet; replacing it with one (matching the `kernel`/
 `systemd-boot` pattern above) is tracked debt, not abandoned.
+
+`ca-certificates/` has its own pinned upstream version, verified before
+use: its `build.sh` fetches curl.se's dated PEM conversion of Mozilla's
+CA root store and checks it against the `SHA256` file's pinned value,
+since curl.se doesn't publish its own signature for that file.
+`VERSION` holds curl.se's date stamp (e.g. `2026-08-13`); both files
+are bumped together when the CA bundle is
+updated.
 
 ## Toolchain images
 
@@ -63,6 +72,15 @@ QEMU emulation for the non-native arch.
 of its own to pin -- it just tracks whatever the pinned Alpine base
 image's `xfsprogs`/`dosfstools` packages currently resolve to.
 
+`ca-certificates` is tagged `<VERSION>` (curl.se's date stamp, e.g.
+`2026-08-13`), `:main`, and `:sha-<sha>`. `:main` always points at
+whatever bundle is currently pinned on the default branch, so a
+consumer that wants the current CA bundle without tracking `VERSION`
+bumps itself can pull it directly; `<VERSION>` exists for a build that
+needs to pin an exact bundle instead. It's published as a single
+multi-platform manifest rather than a separate build per arch, since
+the pinned PEM itself doesn't depend on architecture.
+
 ## CI
 
 Each package has its own workflow (`.github/workflows/kernel.yml`,
@@ -78,6 +96,12 @@ requests build (but don't push); pushes to `main` build and push.
 `fsutils` has its own workflow (`.github/workflows/fsutils.yml`),
 triggered only by changes under `fsutils/`, structured the same way as
 `builder`.
+
+`ca-certificates` has its own workflow
+(`.github/workflows/ca-certificates.yml`), triggered only by changes
+under `ca-certificates/`. It builds the same multi-platform manifest on
+every run (pull requests included) but only pushes it on `main`,
+reading `VERSION`/`SHA256` to pass as build args.
 
 ## Building locally
 
@@ -101,4 +125,13 @@ docker build -t invarios-pkgs-builder:main .
 ```sh
 cd fsutils
 docker build -t invarios-pkgs-fsutils:main .
+```
+
+```sh
+cd ca-certificates
+docker build \
+  --build-arg CA_CERTIFICATES_VERSION=$(cat VERSION) \
+  --build-arg CA_CERTIFICATES_SHA256=$(cat SHA256) \
+  -t invarios-pkgs-ca-certificates:$(cat VERSION) \
+  .
 ```
