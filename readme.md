@@ -1,15 +1,15 @@
 # InvariOS Packages
 
 Build definitions for InvariOS's boot components, published as scratch OCI
-images to `ghcr.io/invarios/pkgs/<package>`.
+images to `ghcr.io/invarios/<package>`.
 
 ## Packages
 
 | Package | Image | Produces |
 | --- | --- | --- |
-| [`kernel/`](kernel) | `ghcr.io/invarios/pkgs/kernel` | `/vmlinuz`, `/kernel.config` |
-| [`systemd-boot/`](systemd-boot) | `ghcr.io/invarios/pkgs/systemd-boot` | `/systemd-boot.efi`, `/boot.efi.stub` |
-| [`fsutils/`](fsutils) | `ghcr.io/invarios/pkgs/fsutils` | `/sbin/mkfs.vfat`, `/sbin/mkfs.xfs` + their runtime `.so` deps |
+| [`kernel/`](kernel) | `ghcr.io/invarios/kernel` | `/vmlinuz`, `/kernel.config` |
+| [`systemd-boot/`](systemd-boot) | `ghcr.io/invarios/systemd-boot` | `/systemd-boot.efi`, `/boot.efi.stub` |
+| [`fsutils/`](fsutils) | `ghcr.io/invarios/fsutils` | `/sbin/mkfs.vfat`, `/sbin/mkfs.xfs` + their runtime `.so` deps |
 
 `kernel/` and `systemd-boot/` are self-contained in the strict sense:
 
@@ -38,13 +38,13 @@ toolchain yet; replacing it with one (matching the `kernel`/
 
 | Image | Image | Contains |
 | --- | --- | --- |
-| [`builder/`](builder) | `ghcr.io/invarios/pkgs/builder` | Go toolchain plus `dosfstools`/`mtools`/`xorriso`, used by the [invarios](https://github.com/invarios/invarios) `Makefile` to build/run the appliance image builder |
+| [`builder/`](builder) | `ghcr.io/invarios/builder` | Go toolchain plus `dosfstools`/`mtools`/`xorriso`, used by the [invarios](https://github.com/invarios/invarios) `Makefile` to build/run the appliance image builder |
 
 Unlike the package images above, `builder/` is a plain single-stage
 image (not `FROM scratch`, no `VERSION`/`build.sh`) and is published as
-a single multi-platform manifest tagged `:main`, built via the shared
-[`SIGTERM-Labs/actions/docker/build`](https://github.com/SIGTERM-Labs/actions/blob/main/docker/build/action.yml)
-action rather than the native per-arch matrix used for `kernel`/`systemd-boot`.
+a single multi-platform manifest tagged `:main`, built with QEMU
+emulation for the non-native arch rather than the native per-arch
+matrix used for `kernel`/`systemd-boot`.
 
 ## Tagging
 
@@ -56,7 +56,7 @@ run in parallel without QEMU emulation.
 
 The `builder` toolchain image is tagged `:main` (plus `:sha-<sha>`) as a
 single multi-platform (`linux/amd64,linux/arm64`) manifest, built with
-QEMU emulation for the non-native arch via the shared build action.
+QEMU emulation for the non-native arch.
 
 `fsutils` follows the same `:main` (plus `:sha-<sha>`) tagging as
 `builder`, for the same reason: it has no independent upstream version
@@ -71,13 +71,13 @@ its own directory. Pull requests build (but don't push) both arches;
 pushes to `main` build and push.
 
 `builder` has its own workflow (`.github/workflows/builder.yml`),
-triggered only by changes under `builder/`, which delegates the
-multi-arch build/push to the shared `docker/build` action. Pull
+triggered only by changes under `builder/`, which builds and pushes the
+multi-arch manifest directly with `docker/build-push-action`. Pull
 requests build (but don't push); pushes to `main` build and push.
 
 `fsutils` has its own workflow (`.github/workflows/fsutils.yml`),
-triggered only by changes under `fsutils/`, using the same shared
-`docker/build` action as `builder`.
+triggered only by changes under `fsutils/`, structured the same way as
+`builder`.
 
 ## Building locally
 

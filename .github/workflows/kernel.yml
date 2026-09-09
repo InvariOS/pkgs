@@ -48,14 +48,14 @@ jobs:
         id: version
         run: echo "value=$(cat kernel/VERSION)" >> "$GITHUB_OUTPUT"
 
-      # Derived from the repo name (rather than hardcoded) so the image
-      # path stays correct if the repo is ever renamed or moved. GHCR
-      # requires a lowercase path; github.repository preserves the
-      # repo's actual casing.
+      # Derived from the owning org (rather than hardcoded) so the image
+      # path stays correct if the org is ever renamed. GHCR requires a
+      # lowercase path; github.repository_owner preserves the org's
+      # actual casing.
       - name: Set image name
         id: image
         run: |
-          name="ghcr.io/${{ github.repository }}/kernel"
+          name="ghcr.io/${{ github.repository_owner }}/kernel"
           echo "name=$(echo "$name" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       # Only this one explicit <version>-<arch> tag is ever pushed --
